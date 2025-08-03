@@ -2,116 +2,131 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Accessible Modal</title>
   <style>
-    /* Utility / Base Styles */
-    .hidden { display: none; }
-    .modal__overlay {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
-      background-color: rgba(0, 0, 0, 0.6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
+    /* Reset & base styles */
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: sans-serif; }
 
-    .modal__content {
-      background-color: #fff;
-      max-width: 90%;
-      width: 500px;
-      padding: 1.5rem;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-      position: relative;
-    }
-
-    .modal__close {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: none;
+    .btn {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      background: #333;
+      color: #fff;
       border: none;
-      font-size: 1.5rem;
+      border-radius: 4px;
       cursor: pointer;
     }
 
-    /* Mobile-first responsiveness */
-    @media (max-width: 480px) {
+    /* Modal styles */
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 9999;
+    }
+
+    .modal--hidden {
+      display: none;
+    }
+
+    .modal__overlay {
+      width: 100%;
+      height: 100%;
+      outline: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal__content {
+      background: #fff;
+      padding: 2rem;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 8px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal__title {
+      margin-top: 0;
+      font-size: 1.5rem;
+    }
+
+    .modal__body {
+      margin: 1rem 0;
+      font-size: 1rem;
+    }
+
+    @media (min-width: 768px) {
       .modal__content {
-        width: 90%;
-        padding: 1rem;
+        padding: 2.5rem;
       }
     }
   </style>
 </head>
 <body>
 
-  <button id="openModal">Open Modal</button>
+  <button id="open-modal" class="btn">Open Modal</button>
 
-  <!-- Modal Markup -->
-  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDesc">
-    <div class="modal__overlay">
-      <div class="modal__content" tabindex="-1">
-        <button class="modal__close" aria-label="Close modal" id="closeModal">&times;</button>
-        <h2 id="modalTitle">Modal Title</h2>
-        <p id="modalDesc">This is the description of the modal. It can accept any child content.</p>
-        <!-- Any dynamic child content can go here -->
+  <div 
+    class="modal modal--hidden" 
+    role="dialog" 
+    aria-modal="true" 
+    aria-labelledby="modal-title"
+  >
+    <div class="modal__overlay" tabindex="-1">
+      <div class="modal__content" role="document">
+        <h2 id="modal-title" class="modal__title">Example Modal</h2>
+        <p class="modal__body">Here is some modal content.</p>
+        <button class="modal__close btn" id="close-modal">Close</button>
       </div>
     </div>
   </div>
 
   <script>
-    const modal = document.getElementById('modal');
-    const openBtn = document.getElementById('openModal');
-    const closeBtn = document.getElementById('closeModal');
-    const modalContent = modal.querySelector('.modal__content');
+    const openBtn = document.getElementById('open-modal');
+    const closeBtn = document.getElementById('close-modal');
+    const modal = document.querySelector('.modal');
+    const modalOverlay = modal.querySelector('.modal__overlay');
+    const focusableSelectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    let focusableElements, firstEl, lastEl;
 
-    let lastFocusedElement;
+    function openModal() {
+      modal.classList.remove('modal--hidden');
+      focusableElements = modal.querySelectorAll(focusableSelectors);
+      firstEl = focusableElements[0];
+      lastEl = focusableElements[focusableElements.length - 1];
+      firstEl.focus();
+    }
 
-    function trapFocus(event) {
-      const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
+    function closeModal() {
+      modal.classList.add('modal--hidden');
+      openBtn.focus();
+    }
 
-      if (event.key === 'Tab') {
-        if (event.shiftKey) {
-          if (document.activeElement === first) {
-            event.preventDefault();
-            last.focus();
-          }
-        } else {
-          if (document.activeElement === last) {
-            event.preventDefault();
-            first.focus();
-          }
+    function trapFocus(e) {
+      if (e.key === 'Tab') {
+        if (e.shiftKey && document.activeElement === firstEl) {
+          e.preventDefault();
+          lastEl.focus();
+        } else if (!e.shiftKey && document.activeElement === lastEl) {
+          e.preventDefault();
+          firstEl.focus();
         }
       }
-
-      if (event.key === 'Escape') {
+      if (e.key === 'Escape') {
         closeModal();
       }
     }
 
-    function openModal() {
-      lastFocusedElement = document.activeElement;
-      modal.classList.remove('hidden');
-      modalContent.focus();
-      document.addEventListener('keydown', trapFocus);
-    }
-
-    function closeModal() {
-      modal.classList.add('hidden');
-      lastFocusedElement?.focus();
-      document.removeEventListener('keydown', trapFocus);
-    }
-
     openBtn.addEventListener('click', openModal);
     closeBtn.addEventListener('click', closeModal);
-    
+    modalOverlay.addEventListener('keydown', trapFocus);
   </script>
 
 </body>
