@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Accessible Modal</title>
+  <style>
+    /* Utility / Base Styles */
+    .hidden { display: none; }
+    .modal__overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal__content {
+      background-color: #fff;
+      max-width: 90%;
+      width: 500px;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      position: relative;
+    }
+
+    .modal__close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    /* Mobile-first responsiveness */
+    @media (max-width: 480px) {
+      .modal__content {
+        width: 90%;
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <button id="openModal">Open Modal</button>
+
+  <!-- Modal Markup -->
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDesc">
+    <div class="modal__overlay">
+      <div class="modal__content" tabindex="-1">
+        <button class="modal__close" aria-label="Close modal" id="closeModal">&times;</button>
+        <h2 id="modalTitle">Modal Title</h2>
+        <p id="modalDesc">This is the description of the modal. It can accept any child content.</p>
+        <!-- Any dynamic child content can go here -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById('modal');
+    const openBtn = document.getElementById('openModal');
+    const closeBtn = document.getElementById('closeModal');
+    const modalContent = modal.querySelector('.modal__content');
+
+    let lastFocusedElement;
+
+    function trapFocus(event) {
+      const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.key === 'Tab') {
+        if (event.shiftKey) {
+          if (document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }
+      }
+
+      if (event.key === 'Escape') {
+        closeModal();
+      }
+    }
+
+    function openModal() {
+      lastFocusedElement = document.activeElement;
+      modal.classList.remove('hidden');
+      modalContent.focus();
+      document.addEventListener('keydown', trapFocus);
+    }
+
+    function closeModal() {
+      modal.classList.add('hidden');
+      lastFocusedElement?.focus();
+      document.removeEventListener('keydown', trapFocus);
+    }
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    
+  </script>
+
+</body>
+</html>
